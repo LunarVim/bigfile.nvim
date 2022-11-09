@@ -10,4 +10,8 @@ M["match_paren"] = {
   end
 }
 
+M["nvim_navic"] = {
+  manual = true
+}
+
 return M

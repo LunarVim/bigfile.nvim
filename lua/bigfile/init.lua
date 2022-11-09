@@ -9,9 +9,17 @@ local big_buffers = {}
 ---@field rules.size string fds
 local config = {
   rules = {
-    { size = 0.001, features = { "match_paren" } },
+    { size = 0.001, features = { "match_paren", "nvim_navic" } },
   }
 }
+
+function M.is_feature_disabled(bufnr, feature)
+  if big_buffers[bufnr] ~= nil then
+    local disabled_features = big_buffers[bufnr].disabled_manual_features
+    return vim.tbl_contains(disabled_features, feature)
+  end
+  return false
+end
 
 local function match_rules(filesize)
   local MB = 1024 * 1024
@@ -50,6 +58,7 @@ local function pre_bufread_callback(args)
 
   local matched_global_features = {}
   local matched_deferred_features = {}
+  local matched_manual_features = {}
 
   for _, feature_name in ipairs(matched_features) do
     local feature = features[feature_name];
@@ -60,12 +69,17 @@ local function pre_bufread_callback(args)
 
     if feature.defer then
       table.insert(matched_deferred_features, feature)
+    elseif feature.manual then
+      table.insert(matched_manual_features, feature_name)
     else
       feature.disable()
     end
   end
 
-  big_buffers[args.buf] = { disabled_global_features = matched_global_features }
+  big_buffers[args.buf] = {
+    disabled_global_features = matched_global_features,
+    disabled_manual_features = matched_manual_features
+  }
 
   if #matched_global_features > 0 then
     vim.api.nvim_create_autocmd({ "BufDelete" }, {

@@ -8,12 +8,12 @@ File sizes and features to disable are configurable.
 
 ## Rules
 Rules tell bigfile.nvim which features to disable
-depending on the size of opened file.
+depending on the size of the opened file.
 ```lua
 local rule = { 
-  --- minimal size of the file to activate this rule
+  -- minimal size of the file to activate this rule
   size = 1,           
-  --- list of features to disable
+  -- list of features to disable
   features = { "treesitter", "syntax" } 
 }
 ```
