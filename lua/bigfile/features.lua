@@ -93,7 +93,7 @@ feature("illuminate", {
 })
 
 feature("indent_blankline", {
-  disable = function(buf)
+  disable = function(_)
     pcall(function()
       require("indent_blankline.commands").disable()
     end)
