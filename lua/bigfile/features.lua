@@ -4,6 +4,7 @@ local M = {}
 ---@field disable function|nil Disables the feature
 ---@field enable function|nil Enables the feature
 ---@field global boolean|nil If true the feature has a global effect
+---@field window_local boolean|nil If true the feature has a window local effect
 ---@field defer boolean|nil If true the feature will be disabled in vim.schedule
 ---@field [1] string Name of the feature
 
@@ -16,12 +17,32 @@ function M.get_feature(raw_feature)
   end
 end
 
+-- TODO: find out why these couse an error in cmp when inside `content` of function call
+--[[ ---@param name string
+---@param content feature ]]
 local function feature(name, content)
   M[name] = content
   M[name][1] = name
 end
 
-feature("match_paren", {
+local function local_feature(name, option, value)
+  option = option or name
+  value = value or false
+  feature(name, {
+    disable = function()
+      vim.opt_local[option] = value
+    end,
+  })
+end
+
+local local_features = { "swapfile", "undofile", "list" }
+
+for _, feat in pairs(local_features) do
+  local_feature(feat)
+end
+
+
+feature("matchparen", {
   global = true,
   disable = function()
     vim.cmd "NoMatchParen"
@@ -29,6 +50,41 @@ feature("match_paren", {
   enable = function()
     vim.cmd "DoMatchParen"
   end
+})
+
+feature("syntax", {
+  global = true,
+  disable = function()
+    vim.cmd "syntax off"
+    vim.cmd "syntax clear"
+  end,
+  enable = function()
+    vim.cmd "syntax on"
+  end
+})
+
+feature("filetype", {
+  global = true,
+  disable = function()
+    vim.cmd "filetype off"
+  end,
+  enable = function()
+    vim.cmd "filetype on"
+  end
+})
+
+feature("treesitter", {
+  defer = true,
+  disable = function()
+    vim.cmd "TSBufDisable highlight"
+    vim.cmd "TSBufDisable indent"
+  end,
+})
+
+feature("illuminate", {
+  disable = function(buf)
+    pcall(require("illuminate.engine").stop_buf, buf)
+  end,
 })
 
 return M

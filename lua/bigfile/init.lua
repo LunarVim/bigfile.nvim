@@ -2,8 +2,11 @@ local M = {}
 
 local features = require("bigfile.features")
 
+---@class big_buffer
+---@field all_disabled_features feature[]
+---@field disabled_global_features feature[]
 -- list of open big buffers
----@type {disabled_global_features: feature[], all_disabled_features: feature[]}[]
+---@type big_buffer[]
 local big_buffers = {}
 
 ---@class rule
@@ -14,7 +17,10 @@ local big_buffers = {}
 ---@field rules rule[] rules
 local config = {
   rules = {
-    { size = 0.0015, features = { "match_paren", { "nvim_navic" }, { "lsp" } } },
+    { size = 1,
+      features = { "illuminate", "matchparen", "treesitter", "syntax", "swapfile", "undofile", { "nvim_navic" } } },
+    { size = 2, features = { { "lsp" } } },
+    { size = 50, features = { "filetype" } },
   }
 }
 
@@ -53,15 +59,17 @@ local function match_features(filesize)
 end
 
 -- Enables global features that aren't disabled by different buffers
-local function enable_global_features(features_to_enable)
+local function enable_global_features(buf, features_to_enable)
   local features_not_to_touch = {}
   for _, big_buffer in pairs(big_buffers) do
-    vim.list_extend(features_not_to_touch, big_buffer.disabled_global_features[1])
+    for _, global_feature in pairs(big_buffer.disabled_global_features) do
+      table.insert(features_not_to_touch, global_feature[1])
+    end
   end
 
   for _, feature in ipairs(features_to_enable) do
     if not vim.tbl_contains(features_not_to_touch, feature[1]) then
-      feature.enable()
+      feature.enable(buf)
     end
   end
 end
@@ -93,7 +101,7 @@ local function pre_bufread_callback(args)
     if feature.defer then
       table.insert(matched_deferred_features, feature)
     elseif type(feature.disable) == "function" then
-      feature.disable()
+      feature.disable(args.buf)
     end
   end
 
@@ -108,7 +116,7 @@ local function pre_bufread_callback(args)
       callback = function()
         local features_to_enable = big_buffers[args.buf].disabled_global_features
         big_buffers[args.buf] = nil
-        enable_global_features(features_to_enable)
+        enable_global_features(args.buf, features_to_enable)
       end,
       buffer = args.buf,
     })
@@ -118,7 +126,7 @@ local function pre_bufread_callback(args)
   vim.schedule(function()
     vim.api.nvim_buf_call(args.buf, function()
       for _, feature in ipairs(matched_deferred_features) do
-        feature.disable()
+        feature.disable(args.buf)
       end
     end)
   end)
@@ -134,7 +142,7 @@ function M.setup(user_config)
   end
 
   vim.api.nvim_create_augroup("bigfile", {})
-  vim.api.nvim_create_autocmd("BufReadPre", {
+  vim.api.nvim_create_autocmd({ "BufReadPost", "BufReadPre" }, {
     group = "bigfile",
     callback = pre_bufread_callback
   })
