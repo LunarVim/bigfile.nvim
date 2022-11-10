@@ -168,7 +168,7 @@ require("bigfile").setup {
 | `syntax`           | `:syntax off`                                    |
 | `filetype`         | `:filetype off`                                  |
 
-The following run `vim.opt_local[name] = false`:
+The following features run `vim.opt_local[name] = false`:
 
 ```lua
 { "swapfile", "undofile", "list" }
