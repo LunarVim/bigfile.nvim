@@ -7,7 +7,7 @@ local big_buffers = {}
 
 ---@class rule
 ---@field size number file size in MiB
----@field features string|table feture name or a custom feature
+---@field features (string|table)[] feature name or a custom feature
 
 ---@class config
 ---@field rules rule[] rules
