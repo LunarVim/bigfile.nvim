@@ -14,7 +14,7 @@ local big_buffers = {}
 ---@field rules rule[] rules
 local config = {
   rules = {
-    { size = 0.0000, features = { "match_paren", { "nvim_navic" }, { "lsp" } } },
+    { size = 0.0015, features = { "match_paren", { "nvim_navic" }, { "lsp" } } },
   }
 }
 
@@ -58,8 +58,6 @@ local function enable_global_features(features_to_enable)
   for _, big_buffer in pairs(big_buffers) do
     vim.list_extend(features_not_to_touch, big_buffer.disabled_global_features[1])
   end
-  vim.pretty_print(features_not_to_touch)
-  vim.pretty_print(big_buffers)
 
   for _, feature in ipairs(features_to_enable) do
     if not vim.tbl_contains(features_not_to_touch, feature[1]) then
@@ -83,7 +81,6 @@ local function pre_bufread_callback(args)
   if #matched_features == 0 then
     return
   end
-  print(args.buf)
 
   -- Categorize features and disable features that don't need deferring
   local matched_global_features = {}
@@ -109,7 +106,6 @@ local function pre_bufread_callback(args)
   if #matched_global_features > 0 then
     vim.api.nvim_create_autocmd({ "BufDelete" }, {
       callback = function()
-        print("deleting ", args.buf)
         local features_to_enable = big_buffers[args.buf].disabled_global_features
         big_buffers[args.buf] = nil
         enable_global_features(features_to_enable)
