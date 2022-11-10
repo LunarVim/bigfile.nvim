@@ -7,7 +7,8 @@ and re-enables them when the buffer is deleted
 File sizes and features to disable are configurable.
 
 Automatic features/integrations include: `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
-Integrations requiring manual configuration: `LSP`, `treesitter`, `nvim_navic`
+
+Integrations requiring manual configuration: `LSP`, `treesitter`, `nvim_navic`.
 You can also add your own features.
 
 ## Setup
