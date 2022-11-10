@@ -12,7 +12,7 @@ You can also add your own features.
 
 ## Setup
 
-1. Installation
+### Installation
 
 ```lua
 -- packer example:
@@ -24,47 +24,50 @@ use {
 }
 ```
 
-2. Integrate it with your config
-   Some features need manual configuration
+### Integrate it with your config
+Some features need manual configuration
 
 - Treesitter
+
   Add a check to highlight.disable in treesitter's config:
 
-```lua
-local bigfile = require("bigfile")
-local treesitter_configs = require("nvim-treesitter.configs")
-treesitter_configs.setup {
-  highlight = {
-    disable = function(_, buf)
-      return require("bigfile").is_feature_disabled(buf, "treesitter")
-    end
-} }
-```
+  ```lua
+  local bigfile = require("bigfile")
+  local treesitter_configs = require("nvim-treesitter.configs")
+  treesitter_configs.setup {
+    highlight = {
+      disable = function(_, buf)
+        return require("bigfile").is_feature_disabled(buf, "treesitter")
+      end
+  } }
+  ```
 
 - LSP
+
   Use this on_attatch:
 
-```lua
-function on_attach(client, bufnr)
-  local bigfile = require("bigfile")
-  if bigfile.is_feature_disabled(bufnr, "lsp") then
-    vim.lsp.buf_detach_client(bufnr, client.id)
-    return
+  ```lua
+  function on_attach(client, bufnr)
+    local bigfile = require("bigfile")
+    if bigfile.is_feature_disabled(bufnr, "lsp") then
+      vim.lsp.buf_detach_client(bufnr, client.id)
+      return
+    end
+    -- ...
   end
-  -- ...
-end
-```
+  ```
 
 - nvim-navic
+
   Add this to the end of on_attatch:
 
-```lua
-local symbols_supported = client.supports_method "textDocument/documentSymbol"
-local navic_disabled = bigfile.is_feature_disabled(bufnr, "nvim_navic")
-if symbols_supported and not navic_disabled then
-  require("nvim-navic").attach(client, bufnr)
-end
-```
+  ```lua
+  local symbols_supported = client.supports_method "textDocument/documentSymbol"
+  local navic_disabled = bigfile.is_feature_disabled(bufnr, "nvim_navic")
+  if symbols_supported and not navic_disabled then
+    require("nvim-navic").attach(client, bufnr)
+  end
+  ```
 
 # Configuration
 
@@ -93,23 +96,14 @@ Full list of features is at the end of this file.
 You can also add your own feature like this:
 
 ```lua
-
---- comments for completion in lua_language_server
----@class feature
----@field disable function|nil Disables the feature
----@field enable function|nil Enables the feature
----@field global boolean|nil If true the feature has a global effect
----@field window_local boolean|nil If true the feature has a window local effect
----@field defer boolean|nil If true the feature will be disabled in vim.schedule (used if you need to know the filetype)
----@field [1] string Name of the feature
 local mymatchparen = {
-  "mymatchparen" -- name
-  global = true, -- NoMatchParen affects all buffers
-  defer = false, -- it doesn't need to know the filetype
-  disable = function() -- What to do to disable the feature
+  "mymatchparen",       -- name
+  global = true,       -- NoMatchParen affects all buffers
+  defer = false,       -- it doesn't need to wait for the filetype
+  disable = function() -- called to disable the feature
     vim.cmd "NoMatchParen"
   end,
-  enable = function() -- What to do to enable the feature
+  enable = function()  -- called to enable the feature
     vim.cmd "DoMatchParen"
   end
 }
@@ -120,8 +114,13 @@ local custom_feature = {"custom"}
 require("bigfile").is_feature_disabled(buf, "custom")
 -- just like `LSP`, and `nvim_navic` from the default configuration
 
--- then use it like this:
-local features = { "treesitter", mymatchparen, custom_feature }
+-- you can put custom featues in the features field in rules of the config:
+require("bigfile").setup{ 
+  rules = {
+    size = 1,
+    features = { "treesitter", mymatchparen, custom_feature }
+  }
+}
 ```
 
 ## Rules
@@ -144,14 +143,16 @@ rules need to be in ascending order sorted by size
 -- in this example treesitter, mymatchparen, and syntax features will be disabled
 -- if the file size is greater or equal than 1MiB
 -- and lsp will be disabled for files with size >= 2MiB
-local rules = {
-  {
-    size = 1,
-    features = { "treesitter", mymatchparen, "syntax" }
-  },
-  {
-    size = 2,
-    features = { {"lsp"}, --[[...]] } -- shorter syntax for a custom feature, just wrap the name in `{}`
+require("bigfile").setup { 
+  rules = {
+    {
+      size = 1,
+      features = { "treesitter", mymatchparen, "syntax" }
+    },
+    {
+      size = 2,
+      features = { {"lsp"}, --[[...]] } -- shorter syntax for a custom feature, just wrap the name in `{}`
+    }
   }
 }
 ```
