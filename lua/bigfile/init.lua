@@ -13,10 +13,14 @@ local config = {
   }
 }
 
-function M.is_feature_disabled(bufnr, feature)
+function M.is_feature_disabled(bufnr, feature_name)
   if big_buffers[bufnr] ~= nil then
-    local disabled_features = big_buffers[bufnr].disabled_manual_features
-    return vim.tbl_contains(disabled_features, feature)
+    local disabled_features = big_buffers[bufnr].disabled_features
+    for _, feature in ipairs(disabled_features) do
+      if feature[1] == feature_name then
+        return true
+      end
+    end
   end
   return false
 end
@@ -26,7 +30,17 @@ local function match_rules(filesize)
   local matched_features = {}
   for _, rule in ipairs(config.rules) do
     if filesize >= rule.size * MB then
-      vim.list_extend(matched_features, rule.features)
+
+      for _, raw_feature in ipairs(rule.features) do
+        local feature
+        if (type(raw_feature) == "string") then
+          feature = features[raw_feature];
+        else
+          feature = raw_feature
+        end
+        table.insert(matched_features, feature)
+      end
+
     else
       return matched_features
     end
@@ -58,10 +72,8 @@ local function pre_bufread_callback(args)
 
   local matched_global_features = {}
   local matched_deferred_features = {}
-  local matched_manual_features = {}
 
-  for _, feature_name in ipairs(matched_features) do
-    local feature = features[feature_name];
+  for _, feature in ipairs(matched_features) do
 
     if feature.global then
       table.insert(matched_global_features, feature)
@@ -69,16 +81,14 @@ local function pre_bufread_callback(args)
 
     if feature.defer then
       table.insert(matched_deferred_features, feature)
-    elseif feature.manual then
-      table.insert(matched_manual_features, feature_name)
-    else
+    elseif not feature.manual then
       feature.disable()
     end
   end
 
   big_buffers[args.buf] = {
     disabled_global_features = matched_global_features,
-    disabled_manual_features = matched_manual_features
+    disabled_features = matched_features
   }
 
   if #matched_global_features > 0 then
