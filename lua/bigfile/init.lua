@@ -18,8 +18,10 @@ local big_buffers = {}
 local config = {
   rules = {
     { size = 1,
-      features = { "indent_blankline", "illuminate", "matchparen", "treesitter", "syntax", "swapfile", "undofile",
-        { "nvim_navic" } } },
+      features = { "indent_blankline", "illuminate", { "nvim_navic" },
+        "matchparen", "treesitter", "syntax",
+        "swapfile", "undofile",
+      } },
     { size = 2, features = { { "lsp" } } },
     { size = 50, features = { "filetype" } },
   }
@@ -70,7 +72,9 @@ local function enable_global_features(buf, features_to_enable)
 
   for _, feature in ipairs(features_to_enable) do
     if not vim.tbl_contains(features_not_to_touch, feature[1]) then
-      feature.enable(buf)
+      if type(feature.enable) == "function" then
+        feature.enable(buf)
+      end
     end
   end
 end

@@ -11,6 +11,9 @@ local M = {}
 ---@return feature
 function M.get_feature(raw_feature)
   if (type(raw_feature) == "string") then -- builtin feature
+    if not M[raw_feature] then
+      vim.notify("bigfile.nvim: feature " .. raw_feature .. " does not exist!", vim.log.levels.WARN)
+    end
     return M[raw_feature];
   else -- custom feature
     return raw_feature
@@ -83,13 +86,17 @@ feature("treesitter", {
 
 feature("illuminate", {
   disable = function(buf)
-    pcall(require("illuminate.engine").stop_buf, buf)
+    pcall(function()
+      require("illuminate.engine").stop_buf(buf)
+    end)
   end,
 })
 
 feature("indent_blankline", {
   disable = function(buf)
-    pcall(require("indent_blankline.commands").disable)
+    pcall(function()
+      require("indent_blankline.commands").disable()
+    end)
   end,
 })
 
