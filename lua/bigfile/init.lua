@@ -17,11 +17,14 @@ local big_buffers = {}
 ---@field rules rule[] rules
 local config = {
   rules = {
-    { size = 1,
-      features = { "indent_blankline", "illuminate", { "nvim_navic" },
-        "matchparen", "treesitter", "syntax",
-        "swapfile", "undofile",
-      } },
+    {
+      size = 1,
+      features = {
+        "indent_blankline", "illuminate", { "nvim_navic" },
+        "treesitter", "syntax",
+        "matchparen", "swapfile", "undofile",
+      }
+    },
     { size = 2, features = { { "lsp" } } },
     { size = 50, features = { "filetype" } },
   }
@@ -147,7 +150,7 @@ function M.setup(user_config)
   end
 
   vim.api.nvim_create_augroup("bigfile", {})
-  vim.api.nvim_create_autocmd({ "BufReadPost", "BufReadPre" }, {
+  vim.api.nvim_create_autocmd("BufReadPre", {
     group = "bigfile",
     callback = pre_bufread_callback
   })
