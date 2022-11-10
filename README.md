@@ -97,7 +97,7 @@ You can also add your own feature like this:
 
 ```lua
 local mymatchparen = {
-  "mymatchparen",       -- name
+  "mymatchparen",      -- name
   global = true,       -- NoMatchParen affects all buffers
   defer = false,       -- it doesn't need to wait for the filetype
   disable = function() -- called to disable the feature
