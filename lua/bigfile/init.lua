@@ -2,17 +2,22 @@ local M = {}
 
 local features = require("bigfile.features")
 
+---@type table[]
 local big_buffers = {}
 
+---@class rule
+---@field size number file size in MiB
+---@field features string|table feture name or a custom feature
+
 ---@class config
----@field rules table fds
----@field rules.size string fds
+---@field rules rule[] rules
 local config = {
   rules = {
-    { size = 0.001, features = { "match_paren", "nvim_navic" } },
+    { size = 0.001, features = { "match_paren", { "nvim_navic" }, { "lsp" } } },
   }
 }
 
+-- checks if feature is disabled in `bufnr` buffer
 function M.is_feature_disabled(bufnr, feature_name)
   if big_buffers[bufnr] ~= nil then
     local disabled_features = big_buffers[bufnr].disabled_features
@@ -25,7 +30,8 @@ function M.is_feature_disabled(bufnr, feature_name)
   return false
 end
 
-local function match_rules(filesize)
+-- returns all features from config.rules that match the `filesize`
+local function match_features(filesize)
   local MB = 1024 * 1024
   local matched_features = {}
   for _, rule in ipairs(config.rules) do
@@ -55,6 +61,7 @@ local function enable_global_features(features_to_enable)
   end
 end
 
+-- main function of the plugin
 local function pre_bufread_callback(args)
   if big_buffers[args.buf] ~= nil then
     return
@@ -65,7 +72,7 @@ local function pre_bufread_callback(args)
     return
   end
 
-  local matched_features = match_rules(stats.size)
+  local matched_features = match_features(stats.size)
   if #matched_features == 0 then
     return
   end
@@ -81,7 +88,7 @@ local function pre_bufread_callback(args)
 
     if feature.defer then
       table.insert(matched_deferred_features, feature)
-    elseif not feature.manual then
+    elseif type(feature.disable) == "function" then
       feature.disable()
     end
   end

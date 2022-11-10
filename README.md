@@ -22,7 +22,7 @@ rules need to be in ascending order sorted by size
 ```lua
 -- in this example treesitter and syntax features will be disabled
 -- if the file size is greater or equal than 1MiB
--- and lsp will be disabled for files with size size >= 2MiB
+-- and lsp will be disabled for files with size >= 2MiB
 local rules = {
   { 
     size = 1,           
