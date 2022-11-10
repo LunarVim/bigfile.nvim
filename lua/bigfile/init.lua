@@ -18,7 +18,8 @@ local big_buffers = {}
 local config = {
   rules = {
     { size = 1,
-      features = { "illuminate", "matchparen", "treesitter", "syntax", "swapfile", "undofile", { "nvim_navic" } } },
+      features = { "indent_blankline", "illuminate", "matchparen", "treesitter", "syntax", "swapfile", "undofile",
+        { "nvim_navic" } } },
     { size = 2, features = { { "lsp" } } },
     { size = 50, features = { "filetype" } },
   }

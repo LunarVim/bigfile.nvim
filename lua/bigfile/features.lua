@@ -87,4 +87,10 @@ feature("illuminate", {
   end,
 })
 
+feature("indent_blankline", {
+  disable = function(buf)
+    pcall(require("indent_blankline.commands").disable)
+  end,
+})
+
 return M
