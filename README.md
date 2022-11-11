@@ -2,13 +2,12 @@
 
 # bigfile.nvim
 
-This plugin disables certain features if the opened file is big
-and re-enables them when the buffer is deleted
+This plugin disables certain features if the opened file is big.
 File sizes and features to disable are configurable.
 
-Automatic features/integrations include: `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
+Automatic features/integrations include: `LSP`, `treesitter`, `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
 
-Integrations requiring manual configuration: `LSP`, `treesitter`, `nvim_navic`.
+Integrations that may manual configuration: `treesitter`.
 You can also add your own features.
 
 ## Setup
@@ -26,9 +25,12 @@ use {
 ```
 
 ### Integrate it with your config
-Some features need manual configuration
+
+Some features may need manual configuration
 
 - Treesitter
+
+  Manual configuration needed only if you're seting `highlight.disable` in treesitter's config
 
   Add a check to highlight.disable in treesitter's config:
 
@@ -37,37 +39,13 @@ Some features need manual configuration
   local treesitter_configs = require("nvim-treesitter.configs")
   treesitter_configs.setup {
     highlight = {
-      disable = function(_, buf)
-        return require("bigfile").is_feature_disabled(buf, "treesitter")
+      disable = function(lang, buf)
+        if pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected") then
+          return true
+        end
+        -- ...
       end
   } }
-  ```
-
-- LSP
-
-  Use this on_attatch:
-
-  ```lua
-  function on_attach(client, bufnr)
-    local bigfile = require("bigfile")
-    if bigfile.is_feature_disabled(bufnr, "lsp") then
-      vim.lsp.buf_detach_client(bufnr, client.id)
-      return
-    end
-    -- ...
-  end
-  ```
-
-- nvim-navic
-
-  Add this to the end of on_attatch:
-
-  ```lua
-  local symbols_supported = client.supports_method "textDocument/documentSymbol"
-  local navic_disabled = bigfile.is_feature_disabled(bufnr, "nvim_navic")
-  if symbols_supported and not navic_disabled then
-    require("nvim-navic").attach(client, bufnr)
-  end
   ```
 
 # Configuration
@@ -80,12 +58,11 @@ require("bigfile").setup{
     {
       size = 1,
       features = {
-        "indent_blankline", "illuminate", { "nvim_navic" },
+        "indent_blankline", "illuminate", "lsp",
         "treesitter", "syntax",
-        "matchparen", "swapfile", "undofile",
+        "matchparen", "vimopts",
       }
     },
-    { size = 2, features = { { "lsp" } } },
     { size = 50, features = { "filetype" } },
   }
 }
@@ -97,29 +74,22 @@ Full list of features is at the end of this file.
 You can also add your own feature like this:
 
 ```lua
-local mymatchparen = {
-  "mymatchparen",      -- name
-  global = true,       -- NoMatchParen affects all buffers
-  defer = false,       -- it doesn't need to wait for the filetype
+local mymatchparen     = {
+  name = "mymatchparen", -- name
+  opts = {
+    defer = false, -- true if `disable` should be called on `BufReadPost` and not `BufReadPre`
+  },
   disable = function() -- called to disable the feature
     vim.cmd "NoMatchParen"
   end,
-  enable = function()  -- called to enable the feature
-    vim.cmd "DoMatchParen"
-  end
 }
-
--- all fields except the name can be nil, so you can do this:
-local custom_feature = {"custom"}
--- a feature like this will require manual configuration by using
-require("bigfile").is_feature_disabled(buf, "custom")
--- just like `LSP`, and `nvim_navic` from the default configuration
+-- all fields except `name` and `disable` can be nil
 
 -- you can put custom featues in the features field in rules of the config:
-require("bigfile").setup{ 
+require("bigfile").setup{
   rules = {
     size = 1,
-    features = { "treesitter", mymatchparen, custom_feature }
+    features = { "treesitter", mymatchparen }
   }
 }
 ```
@@ -134,17 +104,19 @@ local rule = {
   -- minimal size of the file to activate this rule
   size = 1,
   -- list of features to disable
-  features = { "treesitter", mymatchparen, {"custom"} }
+  features = { "treesitter", mymatchparen  }
 }
 ```
 
 rules need to be in ascending order sorted by size
 
+in this example treesitter, mymatchparen, and syntax features will be disabled
+if the file size is greater or equal than 1MiB
+and lsp will be disabled for files with size >= 2MiB
+file sizes are rounded to the closest integer
+
 ```lua
--- in this example treesitter, mymatchparen, and syntax features will be disabled
--- if the file size is greater or equal than 1MiB
--- and lsp will be disabled for files with size >= 2MiB
-require("bigfile").setup { 
+require("bigfile").setup {
   rules = {
     {
       size = 1,
@@ -152,25 +124,26 @@ require("bigfile").setup {
     },
     {
       size = 2,
-      features = { {"lsp"}, --[[...]] } -- shorter syntax for a custom feature, just wrap the name in `{}`
+      features = { "lsp" }
     }
   }
 }
 ```
 
-## Features/integrations
+# Caveats
 
-| name               | function                                         |
-| ------------------ | ------------------------------------------------ |
-| `illuminate`       | disables `RRethy/vim-illuminate`                 |
-| `indent_blankline` | disables `lukas-reineke/indent-blankline.nvim`   |
-| `treesitter`       | `:TSBufDisable highlight` `:TSBufDisable indent` |
-| `matchparen`       | `:NoMatchParen`                                  |
-| `syntax`           | `:syntax off`                                    |
-| `filetype`         | `:filetype off`                                  |
+- `matchparen` stays disabled, even after you close the big file, you can call `:DoMatchParen` manually to enable it
+- `treesitter` will be disabled always in the first rule
 
-The following features run `vim.opt_local[name] = false`:
+# Features/integrations
 
-```lua
-{ "swapfile", "undofile", "list" }
-```
+| name               | function                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `lsp`              | detaches the lsp client from buffer                                                                         |
+| `treesitter`       | disables treesitter for the buffer                                                                          |
+| `illuminate`       | disables `RRethy/vim-illuminate` for the buffer                                                             |
+| `indent_blankline` | disables `lukas-reineke/indent-blankline.nvim` for the buffer                                               |
+| `syntax`           | `:syntax off` for the buffer                                                                                |
+| `filetype`         | `filetype = ""` for the buffer                                                                              |
+| `vimopts`          | `swapfile = false` `foldmethod = "manual"` `undolevels = -1` `undoreload = 0` `list = false` for the buffer |
+| `matchparen`       | `:NoMatchParen` globally, currently this feature will stay disabled, even after you close the big file      |

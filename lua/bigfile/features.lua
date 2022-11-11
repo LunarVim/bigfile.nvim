@@ -1,13 +1,10 @@
 local M = {}
 
 ---@class featureOpts
----@field global boolean|nil If true the feature has a global effect
----@field window_local boolean|nil If true the feature has a window local effect
 ---@field defer boolean|nil If true the feature will be disabled in vim.schedule
 
 ---@class feature
 ---@field disable function Disables the feature
----@field enable function|nil Enables the feature
 ---@field opts featureOpts
 
 ---Add feature
@@ -18,11 +15,10 @@ local function feature(name, content)
     name = { name, "string" },
     content = { content, "table" },
     disable = { content.disable, "function" },
-    enable = { content.enable, "function", true },
     opts = { content.opts, "table", true },
   }
-  content.opts = content.opts or {}
   M[name] = content
+  M[name].opts = content.opts or {}
   M[name].name = name
 end
 
@@ -34,8 +30,17 @@ feature("matchparen", {
     end
     vim.cmd "NoMatchParen"
   end,
-  enable = function()
-    vim.cmd "DoMatchParen"
+})
+
+feature("lsp", {
+  disable = function()
+    vim.api.nvim_create_autocmd({ "LspAttach" }, {
+      callback = function(args)
+        vim.schedule(function()
+          vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+        end)
+      end,
+    })
   end,
 })
 
@@ -67,9 +72,6 @@ feature("indent_blankline", {
 ---@diagnostic disable: assign-type-mismatch
 feature("vimopts", {
   disable = function()
-    vim.cmd "syntax clear"
-    vim.opt_local.syntax = "OFF"
-    vim.opt_local.filetype = ""
     vim.opt_local.swapfile = false
     vim.opt_local.foldmethod = "manual"
     vim.opt_local.undolevels = -1
@@ -78,16 +80,36 @@ feature("vimopts", {
   end,
 })
 
+feature("syntax", {
+  opts = { defer = true },
+  disable = function()
+    vim.cmd "syntax clear"
+    vim.opt_local.syntax = "OFF"
+  end,
+})
+
+feature("filetype", {
+  opts = { defer = true },
+  disable = function()
+    vim.opt_local.filetype = ""
+  end,
+})
+
 ----@return feature
 function M.get_feature(raw_feature)
-  if type(raw_feature) == "string" then -- builtin feature
-    if not M[raw_feature] then
-      vim.notify("bigfile.nvim: feature " .. raw_feature .. " does not exist!", vim.log.levels.WARN)
-    end
-    return M[raw_feature]
-  else -- custom feature
+  local name
+  if type(raw_feature) == "table" then -- builtin feature
+    name = raw_feature.name
+    feature(name, raw_feature)
+  else
+    name = raw_feature
+  end
+
+  if not M[name] then
+    vim.notify("bigfile.nvim: feature " .. vim.inspect(raw_feature) .. " does not exist!", vim.log.levels.WARN)
     return raw_feature
   end
+  return M[name]
 end
 
 return M
