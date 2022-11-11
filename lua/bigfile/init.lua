@@ -82,18 +82,28 @@ local function enable_global_features(buf, features_to_enable)
   end
 end
 
+---@param bufnr number
+---@return integer|nil size in MB if buffer is valid, nil otherwise
+local function get_buf_size(bufnr)
+  local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(bufnr))
+  if not (ok and stats) then
+    return
+  end
+  return stats.size * 1024 * 1024
+end
+
 -- disables features matching the size of the `args.buf` buffer
 local function pre_bufread_callback(args)
   if big_buffers[args.buf] ~= nil then
     return -- buffer aleady set-up
   end
 
-  local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(args.buf))
-  if not (ok and stats) then
+  local size = get_buf_size(args.bufnr)
+  if not size then
     return
   end
 
-  local matched_features = match_features(stats.size)
+  local matched_features = match_features(size)
   if #matched_features == 0 then
     return
   end
