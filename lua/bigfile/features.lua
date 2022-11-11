@@ -106,7 +106,10 @@ function M.get_feature(raw_feature)
   end
 
   if not M[name] then
-    vim.notify("bigfile.nvim: feature " .. vim.inspect(raw_feature) .. " does not exist!", vim.log.levels.WARN)
+    vim.notify(
+      "bigfile.nvim: feature " .. vim.inspect(raw_feature) .. " does not exist!",
+      vim.log.levels.WARN
+    )
     return raw_feature
   end
   return M[name]
