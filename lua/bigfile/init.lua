@@ -14,7 +14,7 @@ local config = {
       size = 1,
       features = {
          "vimopts", "indent_blankline", "illuminate", { "nvim_navic" },
-        "treesitter", "syntax",
+        "treesitter",
         "matchparen",
       }
     },
@@ -48,7 +48,7 @@ local function match_features(bufnr)
   for _, rule in ipairs(config.rules) do
     if filesize >= rule.size then
       for _, raw_feature in ipairs(rule.features) do
-        table.insert(matched_features, features[raw_feature])
+        matched_features[#matched_features + 1] = features.get_feature(raw_feature)
       end
     else -- since rules should be sorted, we can exit early
       return matched_features
@@ -64,7 +64,10 @@ local function pre_bufread_callback(args)
     return -- buffer has already been processed
   end
 
-  local matched_features = match_features(args.bufnr)
+  local matched_features = vim.tbl_filter(function(feature)
+    return type(feature.disable) == "function"
+  end, match_features(args.bufnr))
+
   if #matched_features == 0 then
     vim.api.nvim_buf_set_var(args.buf, "bigfile_detected", 0)
     return

@@ -1,5 +1,6 @@
-describe("features", function()
+local stub = require "luassert.stub"
 
+describe("features", function()
   it("should be available", function()
     local features = require "bigfile.features"
     assert.True(#vim.tbl_keys(features) > 0)
@@ -11,4 +12,11 @@ describe("features", function()
     assert.same("function", type(features["treesitter"].disable))
   end)
 
+  it("performs validation", function()
+    local notify = stub(vim, "notify")
+    local get_feature = require("bigfile.features").get_feature
+    assert.truthy(get_feature "treesitter")
+    assert.equal(nil, get_feature "foo")
+    assert.stub(notify).was_called(1)
+  end)
 end)
