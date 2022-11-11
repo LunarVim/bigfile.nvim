@@ -39,39 +39,12 @@ feature("matchparen", {
   end,
 })
 
-local function nvim_set_local(option, value)
-  vim.api.nvim_set_option_value(option, value { scope = "local" })
-end
-
-feature("syntax", {
-  disable = function()
-    if not vim.g.syntax_on then
-      return
-    end
-    nvim_set_local("syntax", "OFF")
-    vim.cmd "syntax clear"
-  end,
-})
-
-feature("vimopts", {
-  disable = function()
-    nvim_set_local("filetype", "")
-    nvim_set_local("swapfile", false)
-    nvim_set_local("list", false)
-    nvim_set_local("foldmethod", "manual")
-    nvim_set_local("undolevels", -1)
-    nvim_set_local("undoreload", 0)
-  end,
-})
-
 feature("treesitter", {
   opts = { defer = true },
   disable = function()
-    pcall(function()
-      local ts_conf = require "nvim-treesitter.configs"
-      local available_modules = ts_conf.available_modules()
-      vim.cmd("TSBufDisable " .. unpack(available_modules))
-    end)
+    local ts_conf = require "nvim-treesitter.configs"
+    local available_modules = ts_conf.available_modules()
+    vim.cmd("TSBufDisable " .. unpack(available_modules))
   end,
 })
 
@@ -88,6 +61,20 @@ feature("indent_blankline", {
     pcall(function()
       require("indent_blankline.commands").disable()
     end)
+  end,
+})
+
+---@diagnostic disable: assign-type-mismatch
+feature("vimopts", {
+  disable = function()
+    vim.cmd "syntax clear"
+    vim.opt_local.syntax = "OFF"
+    vim.opt_local.filetype = ""
+    vim.opt_local.swapfile = false
+    vim.opt_local.foldmethod = "manual"
+    vim.opt_local.undolevels = -1
+    vim.opt_local.undoreload = 0
+    vim.opt_local.list = false
   end,
 })
 
