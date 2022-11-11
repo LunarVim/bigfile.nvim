@@ -13,12 +13,11 @@ local config = {
     {
       size = 1,
       features = {
-         "vimopts", "indent_blankline", "illuminate", { "nvim_navic" },
-        "treesitter",
-        "matchparen",
+        "indent_blankline", "illuminate", "lsp",
+        "treesitter", "syntax",
+        "matchparen", "vimopts",
       }
     },
-    { size = 2, features = { { "lsp" } } },
     { size = 50, features = { "filetype" } },
   }
 }
@@ -57,7 +56,6 @@ local function match_features(bufnr)
   return matched_features
 end
 
--- disables features matching the size of the `args.buf` buffer
 local function pre_bufread_callback(args)
   local status_ok, _ = pcall(vim.api.nvim_buf_get_var, args.buf, "bigfile_detected")
   if status_ok then
@@ -86,13 +84,16 @@ local function pre_bufread_callback(args)
   end
 
   -- Schedule disabling deferred features
-  vim.schedule(function()
-    vim.api.nvim_buf_call(args.buf, function()
-      for _, feature in ipairs(matched_deferred_features) do
-        feature.disable(args.buf)
-      end
-    end)
-  end)
+  if #matched_deferred_features > 0 then
+    vim.api.nvim_create_autocmd({ "BufReadPost" }, {
+      callback = function()
+        for _, feature in ipairs(matched_deferred_features) do
+          feature.disable(args.buf)
+        end
+      end,
+      buffer = args.buf,
+    })
+  end
 end
 
 ---@param user_config config|nil
@@ -102,6 +103,15 @@ function M.setup(user_config)
       config.rules = user_config.rules
     end
   end
+
+  local treesitter_configs = require("nvim-treesitter.configs")
+  treesitter_configs.setup {
+    highlight = {
+      disable = function(_, buf)
+        return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected")
+      end
+    }
+  }
 
   vim.api.nvim_create_augroup("bigfile", {})
   vim.api.nvim_create_autocmd("BufReadPost", {
