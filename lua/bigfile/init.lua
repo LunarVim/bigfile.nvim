@@ -10,7 +10,7 @@ local features = require("bigfile.features")
 local big_buffers = {}
 
 ---@class rule
----@field size number file size in MiB
+---@field size integer file size in MiB
 ---@field features feature[] array of features
 
 ---@class config
@@ -45,16 +45,29 @@ function M.is_feature_disabled(bufnr, feature_name)
   return false
 end
 
----@param filesize number File size in MiB
+---@param bufnr number
+---@return integer|nil size in MiB if buffer is valid, nil otherwise
+local function get_buf_size(bufnr)
+  local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(bufnr))
+  if not (ok and stats) then
+    return
+  end
+  return stats.size * 1024 * 1024
+end
+
+---@param bufnr number buffer id to match against
 ---@return feature[] features Features from rules that match the `filesize`
-local function match_features(filesize)
-  local MB = 1024 * 1024
+local function match_features(bufnr)
   local matched_features = {}
+  local filesize = get_buf_size(bufnr)
+  if not filesize then
+    return matched_features
+  end
   for _, rule in ipairs(config.rules) do
-    if filesize >= rule.size * MB then
+    if filesize >= rule.size then
 
       for _, raw_feature in ipairs(rule.features) do
-        table.insert(matched_features, features.get_feature(raw_feature))
+        table.insert(matched_features, features[raw_feature])
       end
 
     else -- since rules should be sorted, we can exit early
@@ -82,28 +95,13 @@ local function enable_global_features(buf, features_to_enable)
   end
 end
 
----@param bufnr number
----@return integer|nil size in MB if buffer is valid, nil otherwise
-local function get_buf_size(bufnr)
-  local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(bufnr))
-  if not (ok and stats) then
-    return
-  end
-  return stats.size * 1024 * 1024
-end
-
 -- disables features matching the size of the `args.buf` buffer
 local function pre_bufread_callback(args)
   if big_buffers[args.buf] ~= nil then
     return -- buffer aleady set-up
   end
 
-  local size = get_buf_size(args.bufnr)
-  if not size then
-    return
-  end
-
-  local matched_features = match_features(size)
+  local matched_features = match_features(args.bufnr)
   if #matched_features == 0 then
     return
   end
@@ -112,13 +110,13 @@ local function pre_bufread_callback(args)
   local matched_global_features = {}
   local matched_deferred_features = {}
   for _, feature in ipairs(matched_features) do
-    if feature.global then
+    if feature.opts.global then
       table.insert(matched_global_features, feature)
     end
 
-    if feature.defer then
+    if feature.opts.defer then
       table.insert(matched_deferred_features, feature)
-    elseif type(feature.disable) == "function" then
+    else
       feature.disable(args.buf)
     end
   end
