@@ -9,7 +9,7 @@ describe("callback", function()
   local bufnr
   before_each(function()
     require("bigfile").setup()
-    vim.opt.syntax = "ON"
+    vim.cmd[[syntax on]]
     vim.opt.swapfile = true
     vim.opt.foldmethod = "indent"
     vim.opt.list = true
