@@ -1,6 +1,6 @@
 local M = {}
 
-local features = require("bigfile.features")
+local features = require "bigfile.features"
 
 ---@class rule
 ---@field size integer file size in MiB
@@ -13,19 +13,22 @@ local config = {
     {
       size = 1,
       features = {
-        "indent_blankline", "illuminate", "lsp",
-        "treesitter", "syntax",
-        "matchparen", "vimopts",
-      }
+        "indent_blankline",
+        "illuminate",
+        "lsp",
+        "treesitter",
+        "syntax",
+        "matchparen",
+        "vimopts",
+      },
     },
     { size = 50, features = { "filetype" } },
-  }
+  },
 }
 
 ---@param bufnr number
 ---@return integer|nil size in MiB if buffer is valid, nil otherwise
 local function get_buf_size(bufnr)
-
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local ok, stats = pcall(function()
     return vim.loop.fs_stat(vim.api.nvim_buf_get_name(bufnr))
@@ -104,19 +107,19 @@ function M.setup(user_config)
     end
   end
 
-  local treesitter_configs = require("nvim-treesitter.configs")
+  local treesitter_configs = require "nvim-treesitter.configs"
   treesitter_configs.setup {
     highlight = {
       disable = function(_, buf)
         return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected")
-      end
-    }
+      end,
+    },
   }
 
   vim.api.nvim_create_augroup("bigfile", {})
   vim.api.nvim_create_autocmd("BufReadPost", {
     group = "bigfile",
-    callback = pre_bufread_callback
+    callback = pre_bufread_callback,
   })
 end
 

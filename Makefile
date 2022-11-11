@@ -13,4 +13,8 @@ test: test-data
 test-file:
 	nvim --headless -u $(INIT_RC) -c "lua require('plenary.busted').run('$(FILE)')"
 
-.PHONY: test test-file
+lint:
+	luacheck lua
+	stylua --check lua
+
+.PHONY: test test-file lint
