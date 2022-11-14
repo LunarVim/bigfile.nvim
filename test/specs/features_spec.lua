@@ -16,7 +16,7 @@ describe("features", function()
     local notify = stub(vim, "notify")
     local get_feature = require("bigfile.features").get_feature
     assert.truthy(get_feature "treesitter")
-    assert.equal(nil, get_feature "foo")
+    assert.equal("foo", get_feature "foo")
     assert.stub(notify).was_called(1)
   end)
 end)

@@ -22,7 +22,7 @@ local config = {
         "vimopts",
       },
     },
-    { size = 50, features = { "filetype" } },
+    { size = 5, features = { "filetype" } },
   },
 }
 
