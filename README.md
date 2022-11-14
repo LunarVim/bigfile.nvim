@@ -57,13 +57,14 @@ require("bigfile").setup{
   rules = {
     {
       size = 1,
+      pattern = { "*" },
       features = {
         "indent_blankline", "illuminate", "lsp",
         "treesitter", "syntax",
         "matchparen", "vimopts",
       }
     },
-    { size = 50, features = { "filetype" } },
+    { size = 5, features = { "filetype" } },
   }
 }
 ```
@@ -101,34 +102,16 @@ depending on the size of the opened file.
 
 ```lua
 local rule = {
-  -- minimal size of the file to activate this rule
+  -- minimal filesize (in MiB) to activate this rule
   size = 1,
-  -- list of features to disable
-  features = { "treesitter", mymatchparen  }
+  -- list of features to disable if size is exceeded
+  features = { "treesitter", mymatchparen  },
+  -- filename pattern see |autocmd-pattern|
+  pattern = { "*" }
 }
 ```
 
 rules need to be in ascending order sorted by size
-
-in this example treesitter, mymatchparen, and syntax features will be disabled
-if the file size is greater or equal than 1MiB
-and lsp will be disabled for files with size >= 2MiB
-file sizes are rounded to the closest integer
-
-```lua
-require("bigfile").setup {
-  rules = {
-    {
-      size = 1,
-      features = { "treesitter", mymatchparen, "syntax" }
-    },
-    {
-      size = 2,
-      features = { "lsp" }
-    }
-  }
-}
-```
 
 # Caveats
 
