@@ -4,7 +4,8 @@ local features = require "bigfile.features"
 
 ---@class rule
 ---@field size integer file size in MiB
----@field features feature[] array of features
+---@field pattern string|string[] see |autocmd-pattern|
+---@field features string[] array of features
 
 ---@class config
 ---@field rules rule[] rules
@@ -12,6 +13,7 @@ local config = {
   rules = {
     {
       size = 1,
+      pattern = { "*" },
       features = {
         "indent_blankline",
         "illuminate",
@@ -22,7 +24,7 @@ local config = {
         "vimopts",
       },
     },
-    { size = 5, features = { "filetype" } },
+    { size = 5, pattern = { "*" }, features = { "filetype" } },
   },
 }
 
@@ -117,10 +119,15 @@ function M.setup(user_config)
   }
 
   vim.api.nvim_create_augroup("bigfile", {})
-  vim.api.nvim_create_autocmd("BufReadPre", {
-    group = "bigfile",
-    callback = pre_bufread_callback,
-  })
+
+  for _, rule in ipairs(config.rules) do
+    vim.api.nvim_create_autocmd("BufReadPre", {
+      pattern = rule.pattern,
+      group = "bigfile",
+      callback = pre_bufread_callback,
+      desc = string.format("Performance rule for handling files over %sMiB", rule.size),
+    })
+  end
 end
 
 return M

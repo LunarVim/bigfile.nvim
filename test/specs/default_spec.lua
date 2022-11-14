@@ -9,7 +9,7 @@ describe("callback", function()
   local bufnr
   before_each(function()
     require("bigfile").setup()
-    vim.cmd[[syntax on]]
+    vim.cmd [[syntax on]]
     vim.opt.swapfile = true
     vim.opt.foldmethod = "indent"
     vim.opt.list = true
@@ -32,7 +32,7 @@ describe("callback", function()
   end)
 
   describe("for big files", function()
-    local target_file = "test/data/canada.json"
+    local target_file = "test/data/bigdata.json"
     before_each(function()
       bufnr = bufadd(target_file)
     end)
@@ -60,5 +60,35 @@ describe("callback", function()
         assert.same("json", api.nvim_buf_get_option(bufnr, "filetype"))
       end)
     end)
+  end)
+end)
+
+describe("rules", function()
+  local config = {
+    rules = {
+      { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
+    },
+  }
+  before_each(function()
+    require("bigfile").setup(config)
+  end)
+  it("can define a pattern", function()
+    local aus = api.nvim_get_autocmds { group = "bigfile", pattern = "*.json" }
+    assert.same(1, #aus)
+  end)
+  it("will only match a defined pattern", function()
+    local bufnr
+    local target_file = "test/data/bigdata.json"
+    local target_stats = vim.loop.fs_stat(target_file)
+    local target_size = math.floor(0.5 + (target_stats.size / (1024 * 1024)))
+    assert.True(target_size > config.rules[1].size)
+    bufnr = bufadd(target_file)
+    bufload(bufnr)
+    assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_detected"))
+    local target_file_2 = "test/data/bigdata.csv"
+    assert.True(config.rules[1].pattern[1] ~= "*.csv")
+    bufnr = bufadd(target_file_2)
+    bufload(bufnr)
+    assert.falsy(pcall(api.nvim_buf_get_var, bufnr, "bigfile_detected"))
   end)
 end)

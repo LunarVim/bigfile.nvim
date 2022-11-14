@@ -13,6 +13,9 @@ vim.opt.rtp:append(base_dir)
 vim.cmd [[runtime! plugin/plenary.vim]]
 vim.cmd [[runtime! plugin/nvim-treesitter.lua]]
 
+vim.o.swapfile = false
+vim.bo.swapfile = false
+
 require("nvim-treesitter.configs").setup {
   indent = { enable = true },
   highlight = { enable = true },
