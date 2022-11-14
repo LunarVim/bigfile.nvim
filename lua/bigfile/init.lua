@@ -117,7 +117,7 @@ function M.setup(user_config)
   }
 
   vim.api.nvim_create_augroup("bigfile", {})
-  vim.api.nvim_create_autocmd("BufReadPost", {
+  vim.api.nvim_create_autocmd("BufReadPre", {
     group = "bigfile",
     callback = pre_bufread_callback,
   })
