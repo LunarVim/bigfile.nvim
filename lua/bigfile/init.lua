@@ -60,7 +60,7 @@ local function get_features(bufnr, rule)
 end
 
 local function pre_bufread_callback(bufnr, rule)
-  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, "bigfile_detected")
+  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, "bigfile_checked")
   if status_ok then
     return -- buffer has already been processed
   end
@@ -72,8 +72,6 @@ local function pre_bufread_callback(bufnr, rule)
     return
   end
 
-  vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 1)
-
   -- Categorize features and disable features that don't need deferring
   local matched_deferred_features = {}
   for _, feature in ipairs(matched_features) do
@@ -81,20 +79,20 @@ local function pre_bufread_callback(bufnr, rule)
       table.insert(matched_deferred_features, feature)
     else
       feature.disable(bufnr)
+      vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 1)
     end
   end
 
   -- Schedule disabling deferred features
-  if #matched_deferred_features > 0 then
-    vim.api.nvim_create_autocmd({ "BufReadPost" }, {
-      callback = function()
-        for _, feature in ipairs(matched_deferred_features) do
-          feature.disable(bufnr)
-        end
-      end,
-      buffer = bufnr,
-    })
-  end
+  vim.api.nvim_create_autocmd({ "BufReadPost" }, {
+    callback = function()
+      vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 1)
+      for _, feature in ipairs(matched_deferred_features) do
+        feature.disable(bufnr)
+      end
+    end,
+    buffer = bufnr,
+  })
 end
 
 ---@param user_config config|nil
@@ -109,7 +107,7 @@ function M.setup(user_config)
   treesitter_configs.setup {
     highlight = {
       disable = function(_, buf)
-        return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected")
+        return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
       end,
     },
   }
@@ -122,6 +120,7 @@ function M.setup(user_config)
       group = "bigfile",
       callback = function(args)
         pre_bufread_callback(args.buf, rule)
+        vim.api.nvim_buf_set_var(args.buf, "bigfile_checked", 1)
       end,
       desc = string.format("Performance rule for handling files over %sMiB", rule.size),
     })
