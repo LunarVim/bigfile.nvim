@@ -43,40 +43,36 @@ end
 
 ---@param bufnr number buffer id to match against
 ---@return feature[] features Features from rules that match the `filesize`
-local function match_features(bufnr)
+local function get_features(bufnr, rule)
   local matched_features = {}
   local filesize = get_buf_size(bufnr)
   if not filesize then
     return matched_features
   end
-  for _, rule in ipairs(config.rules) do
-    if filesize >= rule.size then
-      for _, raw_feature in ipairs(rule.features) do
-        matched_features[#matched_features + 1] = features.get_feature(raw_feature)
-      end
-    else -- since rules should be sorted, we can exit early
-      return matched_features
+  if filesize >= rule.size then
+    for _, raw_feature in ipairs(rule.features) do
+      matched_features[#matched_features + 1] = features.get_feature(raw_feature)
     end
+  else -- since rules should be sorted, we can exit early
+    return matched_features
   end
   return matched_features
 end
 
-local function pre_bufread_callback(args)
-  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, args.buf, "bigfile_detected")
+local function pre_bufread_callback(bufnr, rule)
+  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, "bigfile_detected")
   if status_ok then
     return -- buffer has already been processed
   end
 
-  local matched_features = vim.tbl_filter(function(feature)
-    return type(feature.disable) == "function"
-  end, match_features(args.bufnr))
+  local matched_features = get_features(bufnr, rule)
 
   if #matched_features == 0 then
-    vim.api.nvim_buf_set_var(args.buf, "bigfile_detected", 0)
+    vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 0)
     return
   end
 
-  vim.api.nvim_buf_set_var(args.buf, "bigfile_detected", 1)
+  vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 1)
 
   -- Categorize features and disable features that don't need deferring
   local matched_deferred_features = {}
@@ -84,7 +80,7 @@ local function pre_bufread_callback(args)
     if feature.opts.defer then
       table.insert(matched_deferred_features, feature)
     else
-      feature.disable(args.buf)
+      feature.disable(bufnr)
     end
   end
 
@@ -93,10 +89,10 @@ local function pre_bufread_callback(args)
     vim.api.nvim_create_autocmd({ "BufReadPost" }, {
       callback = function()
         for _, feature in ipairs(matched_deferred_features) do
-          feature.disable(args.buf)
+          feature.disable(bufnr)
         end
       end,
-      buffer = args.buf,
+      buffer = bufnr,
     })
   end
 end
@@ -124,7 +120,9 @@ function M.setup(user_config)
     vim.api.nvim_create_autocmd("BufReadPre", {
       pattern = rule.pattern,
       group = "bigfile",
-      callback = pre_bufread_callback,
+      callback = function(args)
+        pre_bufread_callback(args.buf, rule)
+      end,
       desc = string.format("Performance rule for handling files over %sMiB", rule.size),
     })
   end
