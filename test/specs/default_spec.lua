@@ -67,28 +67,32 @@ describe("rules", function()
   local config = {
     rules = {
       { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
+      { size = 2, pattern = { "*" }, features = { "filetype" } },
     },
   }
   before_each(function()
     require("bigfile").setup(config)
   end)
+
   it("can define a pattern", function()
     local aus = api.nvim_get_autocmds { group = "bigfile", pattern = "*.json" }
     assert.same(1, #aus)
   end)
+
   it("will only match a defined pattern", function()
     local bufnr
-    local target_file = "test/data/bigdata.json"
-    local target_stats = vim.loop.fs_stat(target_file)
-    local target_size = math.floor(0.5 + (target_stats.size / (1024 * 1024)))
-    assert.True(target_size > config.rules[1].size)
+    local target_file = "test/data/bigdata.yml"
+
     bufnr = bufadd(target_file)
+    vim.opt.list = true
     bufload(bufnr)
-    assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_detected"))
-    local target_file_2 = "test/data/bigdata.csv"
-    assert.True(config.rules[1].pattern[1] ~= "*.csv")
-    bufnr = bufadd(target_file_2)
-    bufload(bufnr)
-    assert.falsy(pcall(api.nvim_buf_get_var, bufnr, "bigfile_detected"))
+
+    api.nvim_buf_call(bufnr, function()
+      assert.same("", api.nvim_buf_get_option(bufnr, "filetype"))
+    end)
+
+    api.nvim_buf_call(bufnr, function()
+      assert.same(false, vim.opt_local.list:get())
+    end)
   end)
 end)
