@@ -63,15 +63,34 @@ describe("callback", function()
   end)
 end)
 
+describe("setup", function()
+  it("will respect user rules", function()
+    local config = {
+      rules = {
+        { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
+      },
+    }
+    require("bigfile").setup(config)
+    local aus = api.nvim_get_autocmds { group = "bigfile", pattern = "*.json" }
+    assert.same(1, #aus)
+    aus = api.nvim_get_autocmds { group = "bigfile", pattern = "*" }
+    assert.same(0, #aus)
+  end)
+end)
+
 describe("rules", function()
   local config = {
     rules = {
       { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
-      { size = 2, pattern = { "*" }, features = { "filetype" } },
+      { size = 2, pattern = { "*.yml" }, features = { "filetype" } },
     },
   }
+  local bufnr
+  local target_file = "test/data/bigdata.yml"
   before_each(function()
     require("bigfile").setup(config)
+    vim.opt.foldmethod = "indent"
+    bufnr = bufadd(target_file)
   end)
 
   it("can define a pattern", function()
@@ -79,20 +98,12 @@ describe("rules", function()
     assert.same(1, #aus)
   end)
 
-  it("will only match a defined pattern", function()
-    local bufnr
-    local target_file = "test/data/bigdata.yml"
-
-    bufnr = bufadd(target_file)
-    vim.opt.list = true
+  pending("will only match a defined pattern", function()
     bufload(bufnr)
-
+    vim.opt.foldmethod = "indent"
     api.nvim_buf_call(bufnr, function()
       assert.same("", api.nvim_buf_get_option(bufnr, "filetype"))
-    end)
-
-    api.nvim_buf_call(bufnr, function()
-      assert.same(false, vim.opt_local.list:get())
+      assert.same("indent", api.nvim_win_get_option(bufnr, "foldmethod"))
     end)
   end)
 end)
