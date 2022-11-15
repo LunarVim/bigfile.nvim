@@ -33,11 +33,11 @@ feature("matchparen", {
 })
 
 feature("lsp", {
-  disable = function()
+  disable = function(buf)
     vim.api.nvim_create_autocmd({ "LspAttach" }, {
       callback = function(args)
         vim.schedule(function()
-          vim.lsp.buf_detach_client(args.buf, args.data.client_id)
+          vim.lsp.buf_detach_client(buf, args.data.client_id)
         end)
       end,
     })
@@ -45,8 +45,8 @@ feature("lsp", {
 })
 
 feature("treesitter", {
-  disable = function()
-    vim.api.nvim_buf_set_var(0, "bigfile_disable_treesitter", 1)
+  disable = function(buf)
+    vim.api.nvim_buf_set_var(buf, "bigfile_disable_treesitter", 1)
     local ts_conf = require "nvim-treesitter.configs"
     local available_modules = ts_conf.available_modules()
     vim.cmd("TSBufDisable " .. unpack(available_modules))

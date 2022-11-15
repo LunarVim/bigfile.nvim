@@ -23,7 +23,6 @@ describe("callback", function()
 
     it("should cache detection", function()
       bufload(bufnr)
-      assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_checked"))
       assert.same(0, api.nvim_buf_get_var(bufnr, "bigfile_detected"))
     end)
     it("should not alter filetype", function()
@@ -40,7 +39,6 @@ describe("callback", function()
 
     it("should cache detection", function()
       bufload(bufnr)
-      assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_checked"))
       assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_detected"))
     end)
 
@@ -55,11 +53,11 @@ describe("callback", function()
         assert.same(false, vim.opt_local.list:get())
       end)
     end)
-    it("should not disable vim filetype", function()
+    it("should disable vim filetype", function()
       bufload(bufnr)
       -- we can't use vim.schedule since it won't be caught by plenary
       api.nvim_buf_call(bufnr, function()
-        assert.same("json", api.nvim_buf_get_option(bufnr, "filetype"))
+        assert.same("", api.nvim_buf_get_option(bufnr, "filetype"))
       end)
     end)
   end)
@@ -68,9 +66,9 @@ end)
 describe("setup", function()
   it("will respect user rules", function()
     local config = {
-      rules = {
-        { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
-      },
+      size = 1,
+      pattern = { "*.json" },
+      features = { "vimopts" },
     }
     require("bigfile").setup(config)
     local aus = api.nvim_get_autocmds { group = "bigfile", pattern = "*.json" }
@@ -82,10 +80,9 @@ end)
 
 describe("rules", function()
   local config = {
-    rules = {
-      { size = 1, pattern = { "*.json" }, features = { "vimopts" } },
-      { size = 2, pattern = { "*.yml" }, features = { "filetype" } },
-    },
+    size = 1,
+    pattern = { "*.json" },
+    features = { "vimopts" },
   }
   local bufnr
   local target_file = "test/data/bigdata.yml"
@@ -103,9 +100,8 @@ describe("rules", function()
   it("will only match a defined pattern", function()
     bufload(bufnr)
     vim.opt.foldmethod = "indent"
-    api.nvim_buf_call(bufnr, function()
-      assert.same("", api.nvim_buf_get_option(bufnr, "filetype"))
-      assert.same("indent", vim.opt_local.foldmethod:get())
-    end)
+    local status_ok, detected = pcall(api.nvim_buf_get_var, bufnr, "bigfile_detected")
+    assert.same(false, status_ok)
+    assert.same("Key not found: bigfile_detected", detected)
   end)
 end)

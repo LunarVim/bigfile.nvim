@@ -54,18 +54,18 @@ Example with default config:
 
 ```lua
 require("bigfile").setup{
-  rules = {
-    {
-      size = 1,
-      pattern = { "*" },
-      features = {
-        "indent_blankline", "illuminate", "lsp",
-        "treesitter", "syntax",
-        "matchparen", "vimopts",
-      }
-    },
-    { size = 5, features = { "filetype" } },
-  }
+  filesize = 2,
+  pattern = { "*" },
+  features = {
+    "indent_blankline",
+    "illuminate",
+    "lsp",
+    "treesitter",
+    "syntax",
+    "matchparen",
+    "vimopts",
+    "filetype",
+  },
 }
 ```
 
@@ -88,30 +88,10 @@ local mymatchparen     = {
 
 -- you can put custom featues in the features field in rules of the config:
 require("bigfile").setup{
-  rules = {
-    size = 1,
-    features = { "treesitter", mymatchparen }
-  }
+  filesize = 1,
+  features = { "treesitter", mymatchparen }
 }
 ```
-
-## Rules
-
-Rules tell bigfile.nvim which features to disable
-depending on the size of the opened file.
-
-```lua
-local rule = {
-  -- minimal filesize (in MiB) to activate this rule
-  size = 1,
-  -- list of features to disable if size is exceeded
-  features = { "treesitter", mymatchparen  },
-  -- filename pattern see |autocmd-pattern|
-  pattern = { "*" }
-}
-```
-
-rules need to be in ascending order sorted by size
 
 # Caveats
 
