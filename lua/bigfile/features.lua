@@ -35,6 +35,7 @@ feature("matchparen", {
 feature("lsp", {
   disable = function(buf)
     vim.api.nvim_create_autocmd({ "LspAttach" }, {
+      buffer = buf,
       callback = function(args)
         vim.schedule(function()
           vim.lsp.buf_detach_client(buf, args.data.client_id)
