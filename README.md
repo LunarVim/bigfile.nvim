@@ -30,9 +30,9 @@ Some features may need manual configuration
 
 - Treesitter
 
-  Manual configuration needed only if you're seting `highlight.disable` in treesitter's config
+  Manual configuration is needed if you have a custom `<module>.disable`
 
-  Add a check to highlight.disable in treesitter's config:
+  Add a check to `highlight.disable` in treesitter's config:
 
   ```lua
   local bigfile = require("bigfile")
@@ -40,9 +40,8 @@ Some features may need manual configuration
   treesitter_configs.setup {
     highlight = {
       disable = function(lang, buf)
-        if pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected") then
-          return true
-        end
+        local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
+        return status_ok and detected
         -- ...
       end
   } }

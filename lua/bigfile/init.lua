@@ -73,17 +73,32 @@ local function pre_bufread_callback(bufnr, rule)
   })
 end
 
+local function configure_treesitter_disable(cb, modules)
+  local status_ok, ts_config = pcall(require, "nvim-treesitter.configs")
+  if not status_ok then
+    return
+  end
+
+  modules = modules or ts_config.available_modules()
+  for _, mod_name in ipairs(modules) do
+    local module_config = ts_config.get_module(mod_name)
+    if module_config and not module_config.disable then
+      module_config.disable = cb
+    end
+  end
+end
+
 ---@param user_config config|nil
 function M.setup(user_config)
   local config = vim.tbl_deep_extend("force", default_config, user_config or {})
-  local treesitter_configs = require "nvim-treesitter.configs"
-  treesitter_configs.setup {
-    highlight = {
-      disable = function(_, buf)
-        return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
-      end,
-    },
-  }
+
+  if vim.tbl_contains(config.features, "treesitter") then
+    local disable_cb = function(_, buf)
+      local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
+      return status_ok and detected
+    end
+    configure_treesitter_disable(disable_cb)
+  end
 
   vim.api.nvim_create_augroup("bigfile", {})
 

@@ -60,6 +60,16 @@ describe("callback", function()
         assert.same("", api.nvim_buf_get_option(bufnr, "filetype"))
       end)
     end)
+    it("should disable treesitter", function()
+      bufload(bufnr)
+      -- we can't use vim.schedule since it won't be caught by plenary
+      local status_ok, detected = pcall(api.nvim_buf_get_var, bufnr, "bigfile_disable_treesitter")
+      local is_enabled = require("nvim-treesitter.configs").is_enabled
+      assert.False(is_enabled("highlight", "json", bufnr))
+      assert.False(is_enabled("indent", "json", bufnr))
+      assert.True(status_ok)
+      assert.are.same(1, detected)
+    end)
   end)
 end)
 
