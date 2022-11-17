@@ -7,11 +7,12 @@ local function join_paths(...)
 end
 
 local tests_dir = join_paths(base_dir, "tests")
+
+vim.opt.rtp = "$VIMRUNTIME"
+
 vim.opt.rtp:append(tests_dir)
 vim.opt.rtp:append(base_dir)
-
-vim.cmd [[runtime! plugin/plenary.vim]]
-vim.cmd [[runtime! plugin/nvim-treesitter.lua]]
+vim.opt.rtp:append(base_dir)
 
 vim.o.swapfile = false
 vim.bo.swapfile = false

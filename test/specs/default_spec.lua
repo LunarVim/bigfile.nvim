@@ -45,7 +45,6 @@ describe("callback", function()
     it("should disable slow vim options", function()
       bufload(bufnr)
       -- we can't use vim.schedule since it won't be caught by plenary
-      assert.same(1, api.nvim_buf_get_var(bufnr, "bigfile_detected"))
       api.nvim_buf_call(bufnr, function()
         assert.same(false, vim.opt_local.swapfile:get())
         assert.same(-1, vim.opt_local.undolevels:get())
@@ -64,11 +63,14 @@ describe("callback", function()
       bufload(bufnr)
       -- we can't use vim.schedule since it won't be caught by plenary
       local status_ok, detected = pcall(api.nvim_buf_get_var, bufnr, "bigfile_disable_treesitter")
-      local is_enabled = require("nvim-treesitter.configs").is_enabled
+      assert.True(status_ok)
+      assert.same(1, detected)
+
+      local ts_configs = require "nvim-treesitter.configs"
+      local is_enabled = ts_configs.is_enabled
+
       assert.False(is_enabled("highlight", "json", bufnr))
       assert.False(is_enabled("indent", "json", bufnr))
-      assert.True(status_ok)
-      assert.are.same(1, detected)
     end)
   end)
 end)
