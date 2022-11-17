@@ -3,16 +3,16 @@
 # bigfile.nvim
 
 This plugin disables certain features if the opened file is big.
-File sizes and features to disable are configurable.
+File size and features to disable are configurable.
 
 Automatic features/integrations include: `LSP`, `treesitter`, `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
 
 Integrations that may manual configuration: `treesitter`.
 You can also add your own features.
 
-## Setup
+# Setup
 
-### Installation
+## Installation
 
 ```lua
 -- packer example:
@@ -24,7 +24,7 @@ use {
 }
 ```
 
-### Integrate it with your config
+## Integrate it with your config
 
 Some features may need manual configuration
 
@@ -86,7 +86,7 @@ local mymatchparen     = {
 }
 -- all fields except `name` and `disable` can be nil
 
--- you can put custom featues in the features field in rules of the config:
+-- you can put custom features in the features field in rules of the config:
 require("bigfile").setup{
   filesize = 1,
   features = { "treesitter", mymatchparen }
@@ -96,7 +96,6 @@ require("bigfile").setup{
 # Caveats
 
 - `matchparen` stays disabled, even after you close the big file, you can call `:DoMatchParen` manually to enable it
-- `treesitter` will be disabled always in the first rule
 
 # Features/integrations
 
