@@ -90,18 +90,15 @@ local function configure_treesitter_disable(cb, modules)
 end
 
 ---@param overrides config|nil
+function M.config(overrides)
+  default_config = vim.tbl_deep_extend("force", default_config, overrides or {})
+end
+
+---@param overrides config|nil
 function M.setup(overrides)
   local config = vim.tbl_deep_extend("force", default_config, overrides or {})
 
   local augroup = vim.api.nvim_create_augroup("bigfile", {})
-
-  if vim.tbl_contains(config.features, "treesitter") then
-    local disable_cb = function(_, buf)
-      local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
-      return status_ok and detected
-    end
-    configure_treesitter_disable(disable_cb)
-  end
 
   vim.api.nvim_create_autocmd("BufReadPre", {
     pattern = config.pattern,
@@ -111,6 +108,14 @@ function M.setup(overrides)
     end,
     desc = string.format("Performance rule for handling files over %sMiB", config.filesize),
   })
+
+  if vim.tbl_contains(config.features, "treesitter") then
+    local disable_cb = function(_, buf)
+      local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
+      return status_ok and detected
+    end
+    configure_treesitter_disable(disable_cb)
+  end
 end
 
 return M

@@ -58,10 +58,7 @@ local mymatchparen = {
   end,
 }
 
-vim.g.loaded_bigfile_plugin = 1 -- disable auto-loading the setup function
-
--- you **should** defer this call until all the required plugins are loaded
-require("bigfile").setup{
+require("bigfile").config {
   filesize = 1,
   features = { "treesitter", mymatchparen }
 }
