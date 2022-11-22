@@ -81,8 +81,9 @@ local function configure_treesitter_disable(cb, modules)
 
   modules = modules or ts_config.available_modules()
   for _, mod_name in ipairs(modules) do
-    local module_config = ts_config.get_module(mod_name)
-    if module_config and not module_config.disable then
+    local module_config = ts_config.get_module(mod_name) or {}
+    module_config.disable = module_config.disable or {}
+    if type(module_config.disable) == "table" and #module_config.disable == 0 then
       module_config.disable = cb
     end
   end
