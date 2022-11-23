@@ -1,5 +1,3 @@
-# 🚧 WIP 🚧
-
 # bigfile.nvim
 
 This plugin disables certain features if the opened file is big.
