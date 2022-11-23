@@ -2,27 +2,22 @@ local M = {}
 
 local features = require "bigfile.features"
 
----@class rule
----@field size integer file size in MiB
----@field features feature[] array of features
-
 ---@class config
----@field rules rule[] rules
-local config = {
-  rules = {
-    {
-      size = 1,
-      features = {
-        "indent_blankline",
-        "illuminate",
-        "lsp",
-        "treesitter",
-        "syntax",
-        "matchparen",
-        "vimopts",
-      },
-    },
-    { size = 5, features = { "filetype" } },
+---@field filesize integer size in MiB
+---@field pattern string|string[] see |autocmd-pattern|
+---@field features string[] array of features
+local default_config = {
+  filesize = 2,
+  pattern = { "*" },
+  features = {
+    "indent_blankline",
+    "illuminate",
+    "lsp",
+    "treesitter",
+    "syntax",
+    "matchparen",
+    "vimopts",
+    "filetype",
   },
 }
 
@@ -39,42 +34,23 @@ local function get_buf_size(bufnr)
   return math.floor(0.5 + (stats.size / (1024 * 1024)))
 end
 
----@param bufnr number buffer id to match against
----@return feature[] features Features from rules that match the `filesize`
-local function match_features(bufnr)
-  local matched_features = {}
-  local filesize = get_buf_size(bufnr)
-  if not filesize then
-    return matched_features
-  end
-  for _, rule in ipairs(config.rules) do
-    if filesize >= rule.size then
-      for _, raw_feature in ipairs(rule.features) do
-        matched_features[#matched_features + 1] = features.get_feature(raw_feature)
-      end
-    else -- since rules should be sorted, we can exit early
-      return matched_features
-    end
-  end
-  return matched_features
-end
-
-local function pre_bufread_callback(args)
-  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, args.buf, "bigfile_detected")
+local function pre_bufread_callback(bufnr, rule)
+  local status_ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, "bigfile_detected")
   if status_ok then
     return -- buffer has already been processed
   end
 
-  local matched_features = vim.tbl_filter(function(feature)
-    return type(feature.disable) == "function"
-  end, match_features(args.bufnr))
-
-  if #matched_features == 0 then
-    vim.api.nvim_buf_set_var(args.buf, "bigfile_detected", 0)
+  local filesize = get_buf_size(bufnr)
+  if not filesize or filesize < rule.filesize then
+    vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 0)
     return
   end
 
-  vim.api.nvim_buf_set_var(args.buf, "bigfile_detected", 1)
+  vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 1)
+
+  local matched_features = vim.tbl_map(function(feature)
+    return features.get_feature(feature)
+  end, rule.features)
 
   -- Categorize features and disable features that don't need deferring
   local matched_deferred_features = {}
@@ -82,45 +58,64 @@ local function pre_bufread_callback(args)
     if feature.opts.defer then
       table.insert(matched_deferred_features, feature)
     else
-      feature.disable(args.buf)
+      feature.disable(bufnr)
     end
   end
 
   -- Schedule disabling deferred features
-  if #matched_deferred_features > 0 then
-    vim.api.nvim_create_autocmd({ "BufReadPost" }, {
-      callback = function()
-        for _, feature in ipairs(matched_deferred_features) do
-          feature.disable(args.buf)
-        end
-      end,
-      buffer = args.buf,
-    })
+  vim.api.nvim_create_autocmd({ "BufReadPost" }, {
+    callback = function()
+      for _, feature in ipairs(matched_deferred_features) do
+        feature.disable(bufnr)
+      end
+    end,
+    buffer = bufnr,
+  })
+end
+
+local function configure_treesitter_disable(cb, modules)
+  local status_ok, ts_config = pcall(require, "nvim-treesitter.configs")
+  if not status_ok then
+    return
+  end
+
+  modules = modules or ts_config.available_modules()
+  for _, mod_name in ipairs(modules) do
+    local module_config = ts_config.get_module(mod_name) or {}
+    module_config.disable = module_config.disable or {}
+    if type(module_config.disable) == "table" and #module_config.disable == 0 then
+      module_config.disable = cb
+    end
   end
 end
 
----@param user_config config|nil
-function M.setup(user_config)
-  if type(user_config) == "table" then
-    if user_config.rules then
-      config.rules = user_config.rules
-    end
-  end
+---@param overrides config|nil
+function M.config(overrides)
+  default_config = vim.tbl_deep_extend("force", default_config, overrides or {})
+end
 
-  local treesitter_configs = require "nvim-treesitter.configs"
-  treesitter_configs.setup {
-    highlight = {
-      disable = function(_, buf)
-        return pcall(vim.api.nvim_buf_get_var, buf, "bigfile_detected")
-      end,
-    },
-  }
+---@param overrides config|nil
+function M.setup(overrides)
+  local config = vim.tbl_deep_extend("force", default_config, overrides or {})
 
-  vim.api.nvim_create_augroup("bigfile", {})
+  local augroup = vim.api.nvim_create_augroup("bigfile", {})
+
   vim.api.nvim_create_autocmd("BufReadPre", {
-    group = "bigfile",
-    callback = pre_bufread_callback,
+    pattern = config.pattern,
+    group = augroup,
+    callback = function(args)
+      pre_bufread_callback(args.buf, config)
+    end,
+    desc = string.format("Performance rule for handling files over %sMiB", config.filesize),
   })
+
+  if vim.tbl_contains(config.features, "treesitter") then
+    local disable_cb = function(_, buf)
+      local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
+      return status_ok and detected
+    end
+    configure_treesitter_disable(disable_cb)
+  end
 end
 
 return M
