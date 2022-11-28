@@ -23,7 +23,7 @@ The plugin ships with common default options. No further setup is required.
 
 ```lua
 local default_config = {
-  filesize = 2, -- size of the file in MB
+  filesize = 2, -- size of the file in MiB
   pattern = { "*" }, -- autocmd pattern
   features = { -- features to disable
     "indent_blankline",
