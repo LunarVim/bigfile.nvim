@@ -5,7 +5,7 @@ File size and features to disable are configurable.
 
 Automatic features/integrations include: `LSP`, `treesitter`, `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
 
-Integrations that may manual configuration: `treesitter`.
+Integrations that may need manual configuration: `treesitter`.
 You can also add your own features.
 
 # Setup
@@ -23,9 +23,9 @@ The plugin ships with common default options. No further setup is required.
 
 ```lua
 local default_config = {
-  filesize = 2,
-  pattern = { "*" },
-  features = {
+  filesize = 2, -- size of the file in MB
+  pattern = { "*" }, -- autocmd pattern
+  features = { -- features to disable
     "indent_blankline",
     "illuminate",
     "lsp",
