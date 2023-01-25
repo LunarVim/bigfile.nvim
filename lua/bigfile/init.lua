@@ -19,6 +19,7 @@ local default_config = {
     "vimopts",
     "filetype",
   },
+  configure_treesitter = true,
 }
 
 ---@param bufnr number
@@ -109,7 +110,7 @@ function M.setup(overrides)
     desc = string.format("Performance rule for handling files over %sMiB", config.filesize),
   })
 
-  if vim.tbl_contains(config.features, "treesitter") then
+  if config.configure_treesitter and vim.tbl_contains(config.features, "treesitter") then
     local disable_cb = function(_, buf)
       local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
       return status_ok and detected
