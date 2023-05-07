@@ -67,7 +67,6 @@ feature("indent_blankline", {
   end,
 })
 
----@diagnostic disable: assign-type-mismatch
 feature("vimopts", {
   disable = function()
     vim.opt_local.swapfile = false
@@ -96,10 +95,10 @@ feature("filetype", {
 ----@return feature
 function M.get_feature(raw_feature)
   local name
-  if type(raw_feature) == "table" then -- builtin feature
+  if type(raw_feature) == "table" then -- custom feature
     name = raw_feature.name
     feature(name, raw_feature)
-  else
+  else -- builtin feature
     name = raw_feature
   end
 

@@ -106,7 +106,10 @@ function M.setup(overrides)
     callback = function(args)
       pre_bufread_callback(args.buf, config)
     end,
-    desc = string.format("Performance rule for handling files over %sMiB", config.filesize),
+    desc = string.format(
+      "[bigfile.nvim] Performance rule for handling files over %sMiB",
+      config.filesize
+    ),
   })
 
   if vim.tbl_contains(config.features, "treesitter") then

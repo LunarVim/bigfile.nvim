@@ -1,11 +1,10 @@
 # bigfile.nvim
 
-This plugin disables certain features if the opened file is big.
+This plugin automatically disables certain features if the opened file is big.
 File size and features to disable are configurable.
 
-Automatic features/integrations include: `LSP`, `treesitter`, `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
+Features/integrations include: `LSP`, `treesitter`, `indent_blankline`, `illuminate.vim` `NoMatchParen`, `syntax off`, ... (full list at the end)
 
-Integrations that may need manual configuration: `treesitter`.
 You can also add your own features.
 
 # Setup
@@ -21,8 +20,11 @@ use {
 
 The plugin ships with common default options. No further setup is required.
 
+## Customization
+
 ```lua
-local default_config = {
+-- default config
+require("bigfile").config {
   filesize = 2, -- size of the file in MiB, the plugin round file sizes to the closest MiB
   pattern = { "*" }, -- autocmd pattern
   features = { -- features to disable
@@ -38,18 +40,16 @@ local default_config = {
 }
 ```
 
-Full description of features is at the end of this file.
-
-## Customization
+Full description of the default features is at the end of this file.
 
 You can override the default configuration, or add your own custom features
 
 ```lua
--- all fields except `name` and `disable` can be nil
+-- all fields except `name` and `disable` are optional
 local mymatchparen = {
   name = "mymatchparen", -- name
   opts = {
-    defer = false, -- true if `disable` should be called on `BufReadPost` and not `BufReadPre`
+    defer = false, -- set to true if `disable` should be called on `BufReadPost` and not `BufReadPre`
   },
   disable = function() -- called to disable the feature
     vim.cmd "NoMatchParen"
