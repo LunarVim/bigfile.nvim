@@ -73,22 +73,6 @@ local function pre_bufread_callback(bufnr, rule)
   })
 end
 
-local function configure_treesitter_disable(cb, modules)
-  local status_ok, ts_config = pcall(require, "nvim-treesitter.configs")
-  if not status_ok then
-    return
-  end
-
-  modules = modules or ts_config.available_modules()
-  for _, mod_name in ipairs(modules) do
-    local module_config = ts_config.get_module(mod_name) or {}
-    module_config.disable = module_config.disable or {}
-    if type(module_config.disable) == "table" and #module_config.disable == 0 then
-      module_config.disable = cb
-    end
-  end
-end
-
 ---@param overrides config|nil
 function M.config(overrides)
   default_config = vim.tbl_deep_extend("force", default_config, overrides or {})
@@ -111,14 +95,6 @@ function M.setup(overrides)
       config.filesize
     ),
   })
-
-  if vim.tbl_contains(config.features, "treesitter") then
-    local disable_cb = function(_, buf)
-      local status_ok, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
-      return status_ok and detected
-    end
-    configure_treesitter_disable(disable_cb)
-  end
 end
 
 return M

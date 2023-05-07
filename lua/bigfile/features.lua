@@ -45,8 +45,37 @@ feature("lsp", {
   end,
 })
 
+local is_ts_configured = false
+
+local function configure_treesitter()
+  local status_ok, ts_config = pcall(require, "nvim-treesitter.configs")
+  if not status_ok then
+    return
+  end
+
+  local disable_cb = function(_, buf)
+    local success, detected = pcall(vim.api.nvim_buf_get_var, buf, "bigfile_disable_treesitter")
+    return success and detected
+  end
+
+  for _, mod_name in ipairs(ts_config.available_modules()) do
+    local module_config = ts_config.get_module(mod_name) or {}
+    local old_disabled = module_config.disable
+    module_config.disable = function(lang, buf)
+      return disable_cb(lang, buf)
+        or (type(old_disabled) == "table" and vim.tbl_contains(old_disabled, lang))
+        or (type(old_disabled) == "function" and old_disabled(lang, buf))
+    end
+  end
+
+  is_ts_configured = true
+end
 feature("treesitter", {
   disable = function(buf)
+    if not is_ts_configured then
+      configure_treesitter()
+    end
+
     vim.api.nvim_buf_set_var(buf, "bigfile_disable_treesitter", 1)
   end,
 })
