@@ -74,11 +74,6 @@ local function pre_bufread_callback(bufnr, rule)
 end
 
 ---@param overrides config|nil
-function M.config(overrides)
-  default_config = vim.tbl_deep_extend("force", default_config, overrides or {})
-end
-
----@param overrides config|nil
 function M.setup(overrides)
   local config = vim.tbl_deep_extend("force", default_config, overrides or {})
 
@@ -95,6 +90,10 @@ function M.setup(overrides)
       config.filesize
     ),
   })
+
+  vim.g.loaded_bigfile_plugin = true
 end
+
+M.config = M.setup
 
 return M

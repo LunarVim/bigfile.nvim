@@ -24,7 +24,7 @@ The plugin ships with common default options. No further setup is required.
 
 ```lua
 -- default config
-require("bigfile").config {
+require("bigfile").setup {
   filesize = 2, -- size of the file in MiB, the plugin round file sizes to the closest MiB
   pattern = { "*" }, -- autocmd pattern
   features = { -- features to disable
@@ -56,7 +56,7 @@ local mymatchparen = {
   end,
 }
 
-require("bigfile").config {
+require("bigfile").setup {
   filesize = 1,
   features = { "treesitter", mymatchparen }
 }
