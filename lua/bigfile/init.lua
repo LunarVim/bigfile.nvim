@@ -4,9 +4,8 @@ local features = require "bigfile.features"
 
 ---@class config
 ---@field filesize integer size in MiB
----@field pattern string|string[] see |autocmd-pattern|
+---@field pattern string|string[]|fun(bufnr: number, filesize_mib: number): boolean an |autocmd-pattern| or callback to override detection of big files
 ---@field features string[] array of features
----@field override_detection nil|fun(bufnr: number, filesize_mib: number): boolean|nil callback to override detection of big files
 local default_config = {
   filesize = 2,
   pattern = { "*" },
@@ -20,7 +19,6 @@ local default_config = {
     "vimopts",
     "filetype",
   },
-  override_detection = nil,
 }
 
 ---@param bufnr number
@@ -46,11 +44,8 @@ local function pre_bufread_callback(bufnr, config)
 
   local filesize = get_buf_size(bufnr) or 0
   local bigfile_detected = filesize >= config.filesize
-  if type(config.override_detection) == "function" then
-    local user_override = config.override_detection(bufnr, filesize)
-    if user_override ~= nil then
-      bigfile_detected = user_override
-    end
+  if type(config.pattern) == "function" then
+    bigfile_detected = config.pattern(bufnr, filesize) or bigfile_detected
   end
 
   if not bigfile_detected then
@@ -91,8 +86,10 @@ function M.setup(overrides)
 
   local augroup = vim.api.nvim_create_augroup("bigfile", {})
 
+  local pattern = config.pattern
+
   vim.api.nvim_create_autocmd("BufReadPre", {
-    pattern = config.pattern,
+    pattern = type(pattern) ~= "function" and pattern or "*",
     group = augroup,
     callback = function(args)
       pre_bufread_callback(args.buf, config)

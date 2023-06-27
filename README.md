@@ -26,7 +26,7 @@ The plugin ships with common default options. No further setup is required.
 -- default config
 require("bigfile").setup {
   filesize = 2, -- size of the file in MiB, the plugin round file sizes to the closest MiB
-  pattern = { "*" }, -- autocmd pattern
+  pattern = { "*" }, -- autocmd pattern or function see <### Overriding the detection of big files>
   features = { -- features to disable
     "indent_blankline",
     "illuminate",
@@ -37,7 +37,6 @@ require("bigfile").setup {
     "vimopts",
     "filetype",
   },
-  override_detection = nil -- see <### Overriding the detection of big files> below
 }
 ```
 
@@ -65,17 +64,16 @@ require("bigfile").setup {
 
 ### Overriding the detection of big files
 
-You can add your own logic for detecting big files by setting the
-`override_detection` callback in the config. If the function doesn't return
-anything, just the filesize will be used, otherwise the returned boolean will
-be used (true -> file is big, disable features | false -> do nothing)
+You can add your own logic for detecting big files by setting `pattern` in the
+config to a function. If the function returns true file will be considered big,
+otherwise `filesize` will be used as a fallback
 
 example:
 
 ```lua
 require("bigfile").setup {
   -- detect long python files
-  override_detection = function(bufnr, filesize_mib)
+  pattern = function(bufnr, filesize_mib)
     -- you can't use `nvim_buf_line_count` because this runs on BufReadPre
     local file_contents = vim.fn.readfile(vim.api.nvim_buf_get_name(bufnr))
     local file_length = #file_contents
