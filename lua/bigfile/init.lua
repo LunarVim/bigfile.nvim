@@ -4,7 +4,7 @@ local features = require "bigfile.features"
 
 ---@class config
 ---@field filesize integer size in MiB
----@field pattern string|string[] see |autocmd-pattern|
+---@field pattern string|string[]|fun(bufnr: number, filesize_mib: number): boolean an |autocmd-pattern| or callback to override detection of big files
 ---@field features string[] array of features
 local default_config = {
   filesize = 2,
@@ -34,14 +34,21 @@ local function get_buf_size(bufnr)
   return math.floor(0.5 + (stats.size / (1024 * 1024)))
 end
 
-local function pre_bufread_callback(bufnr, rule)
+---@param bufnr number
+---@param config config
+local function pre_bufread_callback(bufnr, config)
   local status_ok, _ = pcall(vim.api.nvim_buf_get_var, bufnr, "bigfile_detected")
   if status_ok then
     return -- buffer has already been processed
   end
 
-  local filesize = get_buf_size(bufnr)
-  if not filesize or filesize < rule.filesize then
+  local filesize = get_buf_size(bufnr) or 0
+  local bigfile_detected = filesize >= config.filesize
+  if type(config.pattern) == "function" then
+    bigfile_detected = config.pattern(bufnr, filesize) or bigfile_detected
+  end
+
+  if not bigfile_detected then
     vim.api.nvim_buf_set_var(bufnr, "bigfile_detected", 0)
     return
   end
@@ -50,7 +57,7 @@ local function pre_bufread_callback(bufnr, rule)
 
   local matched_features = vim.tbl_map(function(feature)
     return features.get_feature(feature)
-  end, rule.features)
+  end, config.features)
 
   -- Categorize features and disable features that don't need deferring
   local matched_deferred_features = {}
@@ -79,8 +86,10 @@ function M.setup(overrides)
 
   local augroup = vim.api.nvim_create_augroup("bigfile", {})
 
+  local pattern = config.pattern
+
   vim.api.nvim_create_autocmd("BufReadPre", {
-    pattern = config.pattern,
+    pattern = type(pattern) ~= "function" and pattern or "*",
     group = augroup,
     callback = function(args)
       pre_bufread_callback(args.buf, config)
