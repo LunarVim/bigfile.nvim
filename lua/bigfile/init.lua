@@ -75,6 +75,7 @@ local function pre_bufread_callback(bufnr, config)
       for _, feature in ipairs(matched_deferred_features) do
         feature.disable(bufnr)
       end
+      vim.api.nvim_exec_autocmds("User", { pattern = "BigfileBufReadPost" })
     end,
     buffer = bufnr,
   })
