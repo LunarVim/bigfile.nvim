@@ -19,7 +19,7 @@ $(PLENARY_DIR):
 	git clone --depth=1 "https://github.com/nvim-lua/plenary.nvim" $(PLENARY_DIR)
 
 $(NVIM_TS_DIR):
-	git clone --depth=1 "https://github.com/nvim-lua/plenary.nvim" $(NVIM_TS_DIR)
+	git clone --depth=1 "https://github.com/nvim-treesitter/nvim-treesitter" $(NVIM_TS_DIR)
 
 test: deps test-data
 	nvim --headless -u $(INIT_RC) -c "PlenaryBustedDirectory test/specs { minimal_init = '$(INIT_RC)' }"
