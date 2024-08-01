@@ -2,12 +2,16 @@ local M = {}
 
 local features = require "bigfile.features"
 
+---@alias filesize_unit "MiB"|"bytes"
+
 ---@class config
----@field filesize integer size in MiB
----@field pattern string|string[]|fun(bufnr: number, filesize_mib: number): boolean an |autocmd-pattern| or callback to override detection of big files
+---@field filesize integer size in filesize_unit, default MiB
+---@field filesize_unit filesize_unit filesize unit, default MiB
+---@field pattern string|string[]|fun(bufnr: number, filesize: number): boolean an |autocmd-pattern| or callback to override detection of big files
 ---@field features string[] array of features
 local default_config = {
-  filesize = 2,
+  filesize = 2, -- 2 MiB
+  filesize_unit = "MiB",
   pattern = { "*" },
   features = {
     "indent_blankline",
@@ -22,7 +26,7 @@ local default_config = {
 }
 
 ---@param bufnr number
----@return integer|nil size in MiB if buffer is valid, nil otherwise
+---@return integer|nil size in bytes if buffer is valid, nil otherwise
 local function get_buf_size(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local ok, stats = pcall(function()
@@ -31,7 +35,16 @@ local function get_buf_size(bufnr)
   if not (ok and stats) then
     return
   end
-  return math.floor(0.5 + (stats.size / (1024 * 1024)))
+  return stats.size
+end
+
+---@param size number filesize in filesize_unit
+---@param target_unit filesize_unit
+local function convert_to_filesize_unit(size, target_unit)
+  if target_unit == "MiB" then
+    return math.floor(0.5 + size / (1024 * 1024))
+  end
+  return size
 end
 
 ---@param bufnr number
@@ -42,7 +55,7 @@ local function pre_bufread_callback(bufnr, config)
     return -- buffer has already been processed
   end
 
-  local filesize = get_buf_size(bufnr) or 0
+  local filesize = convert_to_filesize_unit(get_buf_size(bufnr) or 0, config.filesize_unit)
   local bigfile_detected = filesize >= config.filesize
   if type(config.pattern) == "function" then
     bigfile_detected = config.pattern(bufnr, filesize) or bigfile_detected
@@ -95,8 +108,9 @@ function M.setup(overrides)
       pre_bufread_callback(args.buf, config)
     end,
     desc = string.format(
-      "[bigfile.nvim] Performance rule for handling files over %sMiB",
-      config.filesize
+      "[bigfile.nvim] Performance rule for handling files over %s %s",
+      config.filesize,
+      config.filesize_unit
     ),
   })
 
