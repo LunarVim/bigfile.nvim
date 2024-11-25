@@ -30,6 +30,7 @@ require("bigfile").setup {
   features = { -- features to disable
     "indent_blankline",
     "illuminate",
+    "cmp",
     "lsp",
     "treesitter",
     "syntax",

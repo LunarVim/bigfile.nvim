@@ -88,6 +88,14 @@ feature("illuminate", {
   end,
 })
 
+feature("cmp", {
+  disable = function()
+    pcall(function()
+      require("cmp").setup.buffer({ enabled = false})
+    end)
+  end,
+})
+
 feature("indent_blankline", {
   disable = function(_)
     pcall(function()
