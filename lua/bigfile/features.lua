@@ -11,12 +11,10 @@ local M = {}
 ---@param name string
 ---@param content feature
 local function feature(name, content)
-  vim.validate {
-    name = { name, "string" },
-    content = { content, "table" },
-    disable = { content.disable, "function" },
-    opts = { content.opts, "table", true },
-  }
+  vim.validate("name", name, "string")
+  vim.validate("content", content, "table")
+  vim.validate("disable", content.disable, "function")
+  vim.validate("opts", content.opts, "table", true)
   M[name] = content
   M[name].opts = content.opts or {}
   M[name].name = name
